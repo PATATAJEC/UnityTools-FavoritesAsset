@@ -40,11 +40,11 @@ namespace MasyoLab.Editor.FavoritesAsset
             if (assetIcon == null)
             {
                 assetIcon = EditorGUIUtility.IconContent(CONST.ICON_ERRORICON).image;
-                content = new GUIContent("(missing asset) " + info.Name, assetIcon);
+                content = new GUIContent("(missing asset) " + info.DisplayName, assetIcon, info.Path);
             }
             else
             {
-                content = new GUIContent(info.Name, assetIcon);
+                content = new GUIContent(info.DisplayName, assetIcon, info.Path);
             }
 
             var style = BUTTON_STYLE.Inst;
@@ -70,11 +70,34 @@ namespace MasyoLab.Editor.FavoritesAsset
         {
             DrawingSetting(pipeline, data, (content, style) =>
             {
-                if (GUI.Button(rect, content, style))
+                var originalBackground = GUI.backgroundColor;
+                try
                 {
-                    onButtonAction?.Invoke(data);
+                    if (data.UseCustomColor)
+                    {
+                        EditorGUI.DrawRect(new Rect(rect.x, rect.y + 2f, 4f, rect.height - 4f), data.BookmarkColor);
+                        rect.x += 6f;
+                        rect.width = Mathf.Max(0f, rect.width - 6f);
+                        GUI.backgroundColor = originalBackground * Color.Lerp(Color.white, data.BookmarkColor, 0.5f);
+                    }
+
+                    if (GUI.Button(rect, content, style))
+                    {
+                        onButtonAction?.Invoke(data);
+                    }
+                }
+                finally
+                {
+                    GUI.backgroundColor = originalBackground;
                 }
             });
+        }
+
+        public static bool OnEditButton(Rect rect)
+        {
+            var icon = EditorGUIUtility.IconContent(CONST.ICON_EDIT);
+            var content = new GUIContent(icon.image, "Edit bookmark suffix and color");
+            return GUI.Button(rect, content);
         }
 
         /// <summary>

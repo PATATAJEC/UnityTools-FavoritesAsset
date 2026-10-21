@@ -181,12 +181,19 @@ namespace MasyoLab.Editor.FavoritesAsset
             AssetDrawer.OnPingObjectButton(copyRect, assetData);
 
             rect.x += BUTTON_WIDTH;
-            rect.width -= BUTTON_WIDTH * 2;
+            rect.width = Mathf.Max(0f, rect.width - BUTTON_WIDTH * 3);
 
             // アセットを開くボタン
             AssetDrawer.OnAssetButton(m_pipeline, rect, assetData, OpenAsset);
 
             copyRect.x = rect.x + rect.width;
+
+            if (AssetDrawer.OnEditButton(copyRect))
+            {
+                BookmarkAppearanceWindow.Show(assetData, m_pipeline.Favorites, m_pipeline.Root);
+            }
+
+            copyRect.x += BUTTON_WIDTH;
 
             // お気に入り除ボタン
             return AssetDrawer.OnUnfavoriteButton(copyRect, assetData);

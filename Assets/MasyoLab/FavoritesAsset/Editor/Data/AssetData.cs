@@ -36,6 +36,15 @@ namespace MasyoLab.Editor.FavoritesAsset
         /// </summary>
         public long LocalId = 0;
 
+        // Bookmark appearance is independent of the referenced asset and its name.
+        public string LabelSuffix = string.Empty;
+        public bool UseCustomColor = false;
+        public Color BookmarkColor = Color.white;
+
+        public string DisplayName => string.IsNullOrWhiteSpace(LabelSuffix)
+            ? Name
+            : $"{Name} — {LabelSuffix.Trim()}";
+
         public int Index { get; set; }
 
         public AssetData(string guid, long localId)
@@ -43,6 +52,17 @@ namespace MasyoLab.Editor.FavoritesAsset
             Guid = guid;
             LocalId = localId;
             UpdateData();
+        }
+
+        public AssetData Copy()
+        {
+            return new AssetData(Guid, LocalId)
+            {
+                Index = Index,
+                LabelSuffix = LabelSuffix,
+                UseCustomColor = UseCustomColor,
+                BookmarkColor = BookmarkColor,
+            };
         }
 
         public Object GetObject()

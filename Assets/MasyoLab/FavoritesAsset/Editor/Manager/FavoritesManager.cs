@@ -58,6 +58,28 @@ namespace MasyoLab.Editor.FavoritesAsset
             SaveLoad.Save(FavoritesJson.ToJson(m_assetDB.Inst), SaveLoad.GetSaveDataPath(m_pipeline.Group.SelectGroupFileName));
         }
 
+        public bool SetAppearance(AssetData asset, string labelSuffix, bool useCustomColor, Color color)
+        {
+            // The user can switch groups while the appearance editor is open.
+            // Save the group that owns this entry, rather than the currently selected group.
+            foreach (var entry in m_assetDBDict)
+            {
+                if (!entry.Value.Inst.Ref.Contains(asset))
+                {
+                    continue;
+                }
+
+                asset.LabelSuffix = labelSuffix == null ? string.Empty : labelSuffix.Trim();
+                asset.UseCustomColor = useCustomColor;
+                asset.BookmarkColor = new Color(color.r, color.g, color.b, 1f);
+                SaveLoad.Save(FavoritesJson.ToJson(entry.Value.Inst), SaveLoad.GetSaveDataPath(entry.Key));
+                return true;
+            }
+
+            // The entry or its group may have been removed while editing.
+            return false;
+        }
+
         public void SaveAll()
         {
             foreach (var item in m_pipeline.Group.GroupDB.Data)
@@ -205,7 +227,8 @@ namespace MasyoLab.Editor.FavoritesAsset
             var baseLinker = GetSelectFavoritesData(baseGUID);
             var targetLinker = GetSelectFavoritesData(targetGUID);
             targetLinker.Inst.Ref.Clear();
-            targetLinker.Inst.Ref.AddRange(baseLinker.Inst.Ref);
+            // Copies must keep their own suffix and color when edited later.
+            targetLinker.Inst.Ref.AddRange(baseLinker.Inst.Ref.ConvertAll(asset => asset.Copy()));
         }
     }
 }

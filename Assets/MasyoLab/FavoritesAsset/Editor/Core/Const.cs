@@ -15,7 +15,7 @@ namespace MasyoLab.Editor.FavoritesAsset
     struct CONST
     {
         public const string DEVELOPER = "MasyoLab";
-        public const string VERSION = "ver 1.5.7";
+        public const string VERSION = "ver 1.6.0";
         public const string EDITOR_NAME = "Favorites Asset";
         public const string EDITOR_WINDOW_NAME = "Favorites Asset Window";
         public const string MENU_ITEM = "Tools/" + EDITOR_WINDOW_NAME;
@@ -86,6 +86,9 @@ namespace MasyoLab.Editor.FavoritesAsset
         /// Settings Icon
         /// </summary>
         public const string ICON_SETTINGS = "SettingsIcon";
+
+        // Unity's built-in pencil icon (available in Unity 2022.3).
+        public const string ICON_EDIT = "editicon.sml";
 
         /// <summary>
         /// エラーアイコン

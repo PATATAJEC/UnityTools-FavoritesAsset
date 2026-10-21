@@ -51,6 +51,26 @@ Registered assets can have a focus button for the Project view and an open butto
 
 ![fav assets action 2](https://user-images.githubusercontent.com/20793765/128969150-67e8dfe0-786b-457c-bcd1-4b40dc0bcc1d.gif)
 
+### Bookmark suffixes and colors (PATATAJEC fork)
+
+Click the pencil icon next to **×** on any bookmark to edit its appearance:
+
+- **Name suffix** adds a note after the original asset name, e.g. `Materials — Character`.
+- **Color code** adds a colored strip and a subtle tint to the bookmark button. Pick a quick color or use Unity's color picker.
+- **Save** applies and saves the changes; **Cancel** discards them. **Reset**, followed by **Save**, restores the original label and default appearance.
+
+These settings belong to each bookmark, so the same asset can have different notes and colors in different groups. They do not rename or modify the asset or folder. Hover over the asset button to see its full project path.
+
+Suffixes and colors persist in the existing favorites files and are included in import/export and group copies. Existing favorites without appearance settings keep their original labels and styling. Copying a group creates independent bookmark entries.
+
+To install this fork from **Window > Package Manager > + > Add package from git URL...**, use:
+
+```text
+https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/FavoritesAsset
+```
+
+EditMode regression tests cover older save files, appearance serialization and export/import, renamed/moved folders and prefabs, independent group copies, and Unity's edit icon. The test project's manifest includes Unity Test Framework so the tests can also run locally.
+
 ### Unlock favorites
 
 ![fav assets action 3](https://user-images.githubusercontent.com/20793765/129485099-4ff09124-6fce-4e92-b19b-4126705b7295.gif)
