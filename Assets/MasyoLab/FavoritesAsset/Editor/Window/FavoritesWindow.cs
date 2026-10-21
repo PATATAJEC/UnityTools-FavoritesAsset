@@ -141,9 +141,22 @@ namespace MasyoLab.Editor.FavoritesAsset
                 }
             }
 
+            void DrawBackground(Rect rect, int index, bool isActive, bool isFocused)
+            {
+                if (index >= 0 && index < assetDatas.Count && assetDatas[index].Kind == BookmarkKind.Separator)
+                {
+                    AssetDrawer.DrawSeparatorBackground(rect, index, isActive, isFocused, m_reorderableList.draggable);
+                }
+                else
+                {
+                    ReorderableList.defaultBehaviours.DrawElementBackground(rect, index, isActive, isFocused, m_reorderableList.draggable);
+                }
+            }
+
             m_reorderableList.list = assetDatas;
 
             m_reorderableList.drawElementCallback = DrawElement;
+            m_reorderableList.drawElementBackgroundCallback = DrawBackground;
             m_reorderableList.onChangedCallback = Changed;
             m_reorderableList.drawHeaderCallback = DrawHeader;
             m_reorderableList.drawFooterCallback = DrawFooter;
@@ -200,10 +213,13 @@ namespace MasyoLab.Editor.FavoritesAsset
             var assetData = m_pipeline.Favorites.Data[index];
             if (assetData.Kind == BookmarkKind.Separator)
             {
-                var line = new Rect(rect.x + 4f, rect.center.y - 1.5f,
-                    Mathf.Max(0f, rect.width - BUTTON_WIDTH - 8f), 3f);
-                var lineColor = EditorGUIUtility.isProSkin ? new Color(0.55f, 0.55f, 0.55f) : new Color(0.35f, 0.35f, 0.35f);
-                EditorGUI.DrawRect(line, lineColor);
+                var body = new Rect(rect.x, rect.y, Mathf.Max(0f, rect.width - BUTTON_WIDTH * 2), rect.height);
+                AssetDrawer.DrawSeparator(body, assetData);
+                var edit = new Rect(rect.xMax - BUTTON_WIDTH * 2, rect.y, BUTTON_WIDTH, rect.height);
+                if (AssetDrawer.OnEditButton(edit))
+                {
+                    BookmarkAppearanceWindow.Show(assetData, m_pipeline.Favorites, m_pipeline.Root);
+                }
                 var remove = new Rect(rect.xMax - BUTTON_WIDTH, rect.y, BUTTON_WIDTH, rect.height);
                 return AssetDrawer.OnUnfavoriteButton(remove, assetData);
             }

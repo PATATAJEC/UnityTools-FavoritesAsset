@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Events;
+using UnityEditorInternal;
 
 //=========================================================
 //
@@ -106,6 +107,48 @@ namespace MasyoLab.Editor.FavoritesAsset
             var icon = EditorGUIUtility.IconContent(CONST.ICON_EDIT);
             var content = new GUIContent(icon.image, "Edit bookmark settings");
             return GUI.Button(rect, content);
+        }
+
+        public static void DrawSeparatorBackground(Rect rect, int index, bool selected, bool focused, bool draggable)
+        {
+            ReorderableList.defaultBehaviours.DrawElementBackground(rect, index, false, false, draggable);
+            if (!selected || Event.current.type != EventType.Repaint)
+            {
+                return;
+            }
+
+            // Keep Unity's native selection color only at the edges, including the drag handle.
+            // Clipping the native style avoids hard-coding either theme's selection colors.
+            DrawSelectionEdge(rect, new Rect(rect.x, rect.y, Mathf.Min(20f, rect.width), rect.height), index, focused, draggable);
+            DrawSelectionEdge(rect, new Rect(Mathf.Max(rect.x, rect.xMax - 2f), rect.y, Mathf.Min(2f, rect.width), rect.height), index, focused, draggable);
+        }
+
+        private static void DrawSelectionEdge(Rect row, Rect edge, int index, bool focused, bool draggable)
+        {
+            GUI.BeginClip(edge);
+            try
+            {
+                var localRow = new Rect(row.x - edge.x, row.y - edge.y, row.width, row.height);
+                ReorderableList.defaultBehaviours.DrawElementBackground(localRow, index, true, focused, draggable);
+            }
+            finally
+            {
+                GUI.EndClip();
+            }
+        }
+
+        public static void DrawSeparator(Rect rect, AssetData data)
+        {
+            if (data.UseCustomColor)
+            {
+                var tint = data.BookmarkColor;
+                tint.a = 0.16f;
+                EditorGUI.DrawRect(rect, tint);
+                EditorGUI.DrawRect(new Rect(rect.x, rect.y + 2f, Mathf.Min(4f, rect.width), rect.height - 4f), data.BookmarkColor);
+            }
+
+            var textRect = new Rect(rect.x + 8f, rect.y, Mathf.Max(0f, rect.width - 12f), rect.height);
+            GUI.Label(textRect, new GUIContent(data.DisplayName, "Separator — drag the handle to reposition; use the pencil to edit"), EditorStyles.boldLabel);
         }
 
         /// <summary>

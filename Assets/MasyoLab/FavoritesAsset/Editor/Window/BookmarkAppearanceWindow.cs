@@ -32,7 +32,8 @@ namespace MasyoLab.Editor.FavoritesAsset
         public static BookmarkAppearanceWindow Show(AssetData asset, FavoritesManager favorites, EditorWindow owner)
         {
             var window = CreateInstance<BookmarkAppearanceWindow>();
-            window.titleContent = new GUIContent(asset.Kind == BookmarkKind.MenuCommand ? "Edit menu command" : "Edit bookmark");
+            window.titleContent = new GUIContent(asset.Kind == BookmarkKind.MenuCommand
+                ? "Edit menu command" : asset.Kind == BookmarkKind.Separator ? "Edit separator" : "Edit bookmark");
             window.m_asset = asset;
             window.m_favorites = favorites;
             window.m_owner = owner;
@@ -76,11 +77,17 @@ namespace MasyoLab.Editor.FavoritesAsset
             using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorDefaultMargins))
             {
                 var isCommand = m_asset.Kind == BookmarkKind.MenuCommand;
+                var isSeparator = m_asset.Kind == BookmarkKind.Separator;
                 if (isCommand)
                 {
                     GUI.SetNextControlName("MenuCommandPath");
                     m_menuPath = EditorGUILayout.TextField("Menu path", m_menuPath);
                     EditorGUILayout.HelpBox("Enter the exact path from Unity's menu, e.g. Assets/Show in Explorer. Saving does not run the command.", MessageType.Info);
+                }
+                else if (isSeparator)
+                {
+                    EditorGUILayout.LabelField("Separator", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField("An empty spacer with an optional caption and color.", EditorStyles.miniLabel);
                 }
                 else
                 {
@@ -90,7 +97,7 @@ namespace MasyoLab.Editor.FavoritesAsset
                 EditorGUILayout.Space();
 
                 GUI.SetNextControlName("BookmarkSuffix");
-                m_suffix = EditorGUILayout.TextField("Name suffix", m_suffix);
+                m_suffix = EditorGUILayout.TextField(isSeparator ? "Caption (optional)" : "Name suffix", m_suffix);
                 if (m_focusSuffix && ev.type == EventType.Repaint)
                 {
                     EditorGUI.FocusTextInControl(m_creating ? "MenuCommandPath" : "BookmarkSuffix");
@@ -98,8 +105,8 @@ namespace MasyoLab.Editor.FavoritesAsset
                 }
 
                 var originalName = isCommand ? AssetData.GetMenuCommandName(m_menuPath) : m_asset.Name;
-                var preview = string.IsNullOrWhiteSpace(m_suffix)
-                    ? originalName : $"{originalName} — {m_suffix.Trim()}";
+                var preview = isSeparator ? (m_suffix ?? string.Empty).Trim()
+                    : string.IsNullOrWhiteSpace(m_suffix) ? originalName : $"{originalName} — {m_suffix.Trim()}";
                 EditorGUILayout.LabelField("Preview", preview);
                 EditorGUILayout.Space();
 
@@ -126,6 +133,7 @@ namespace MasyoLab.Editor.FavoritesAsset
 
                 EditorGUILayout.HelpBox(isCommand
                     ? "Click the saved bookmark to run the command. Commands use the current selection in Unity."
+                    : isSeparator ? "Changes affect this separator only. Drag its handle to reposition it."
                     : "Changes affect this bookmark only. The asset name and path stay unchanged.", MessageType.Info);
                 GUILayout.FlexibleSpace();
 

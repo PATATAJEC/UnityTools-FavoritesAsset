@@ -1,10 +1,13 @@
 using System.Collections.Generic;
+using System.Collections;
 using System.IO;
 using System.Reflection;
 using MasyoLab.Editor.FavoritesAsset;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEditorInternal;
 
 namespace MasyoLab.FavoritesAsset.Tests.Editor
 {
@@ -402,6 +405,103 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
             pipeline.Group.GroupDB.Data.RemoveAt(0);
             Assert.IsFalse(pipeline.Favorites.AddEntry(AssetData.CreateSeparator(), originalKey));
             Assert.AreEqual(1, original.Ref.Count);
+        }
+
+        [Test]
+        public void SeparatorCaptionAndColor_PersistExportCopyAndResetIndependently()
+        {
+            var pipeline = new TestPipeline();
+            var source = new AssetDB();
+            var key = AddGroup(pipeline.Favorites, source);
+            var separator = AssetData.CreateSeparator();
+            source.Ref.Add(separator);
+            Assert.AreEqual(string.Empty, separator.DisplayName);
+            Assert.IsTrue(pipeline.Favorites.SetAppearance(separator, "  Oświetlenie  ", true, Color.cyan));
+            var saved = FavoritesJson.FromJson(SaveLoad.Load(SaveLoad.GetSaveDataPath(key))).AssetDB;
+            saved.Ref[0].UpdateData();
+            Assert.AreEqual(BookmarkKind.Separator, saved.Ref[0].Kind);
+            Assert.AreEqual("Oświetlenie", saved.Ref[0].DisplayName);
+            Assert.IsTrue(saved.Ref[0].UseCustomColor);
+            Assert.AreEqual(Color.cyan, saved.Ref[0].BookmarkColor);
+
+            var exported = FavoritesJsonExportData.ToJson(saved, new GroupDB(), new List<AssetDB>());
+            var imported = FavoritesJsonExportData.FromJson(exported).AssetDB.Ref[0];
+            imported.UpdateData();
+            Assert.AreEqual("Oświetlenie", imported.DisplayName);
+            Assert.AreEqual(Color.cyan, imported.BookmarkColor);
+            Assert.IsTrue(imported.UseCustomColor);
+
+            var target = new AssetDB();
+            var targetKey = AddGroup(pipeline.Favorites, target);
+            pipeline.Favorites.ReplicationFavoriteData(key, targetKey);
+            Assert.AreEqual("Oświetlenie", target.Ref[0].DisplayName);
+            Assert.IsTrue(pipeline.Favorites.SetAppearance(target.Ref[0], "", false, Color.white));
+            var reset = FavoritesJson.FromJson(SaveLoad.Load(SaveLoad.GetSaveDataPath(targetKey))).AssetDB.Ref[0];
+            reset.UpdateData();
+            Assert.AreEqual(string.Empty, reset.DisplayName);
+            Assert.IsFalse(reset.UseCustomColor);
+            Assert.AreEqual("Oświetlenie", separator.DisplayName);
+            Assert.AreEqual(Color.cyan, separator.BookmarkColor);
+        }
+
+        public class SeparatorPreviewWindow : EditorWindow
+        {
+            private ReorderableList m_list;
+            public int Repaints;
+            public bool ClipRestored = true;
+
+            private void OnGUI()
+            {
+                if (m_list == null)
+                {
+                    var entries = new List<AssetData> { AssetData.CreateSeparator(), AssetData.CreateSeparator() };
+                    entries[1].LabelSuffix = "Oświetlenie";
+                    entries[1].UseCustomColor = true;
+                    entries[1].BookmarkColor = Color.cyan;
+                    m_list = new ReorderableList(entries, typeof(AssetData), true, false, false, false);
+                    m_list.showDefaultBackground = false;
+                    m_list.elementHeight = CONST.GUI_LAYOUT_HEIGHT;
+                    m_list.index = 0;
+                    m_list.drawElementBackgroundCallback = (rect, index, selected, focused) =>
+                    {
+                        var origin = GUIUtility.GUIToScreenPoint(Vector2.zero);
+                        AssetDrawer.DrawSeparatorBackground(rect, index, selected, focused, true);
+                        ClipRestored &= origin == GUIUtility.GUIToScreenPoint(Vector2.zero);
+                    };
+                    m_list.drawElementCallback = (rect, index, selected, focused) => AssetDrawer.DrawSeparator(rect, entries[index]);
+                }
+                m_list.DoLayoutList();
+                if (Event.current.type == EventType.Repaint)
+                {
+                    Repaints++;
+                }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator SeparatorRendering_PreservesGUIClipping()
+        {
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            {
+                Assert.Ignore("This GUI test requires a graphics device; run Unity without -nographics.");
+            }
+            var preview = ScriptableObject.CreateInstance<SeparatorPreviewWindow>();
+            try
+            {
+                preview.position = new Rect(100, 100, 400, 120);
+                preview.ShowUtility();
+                for (var frame = 0; frame < 5; frame++)
+                {
+                    preview.Repaint();
+                    yield return null;
+                }
+                Assert.Greater(preview.Repaints, 0, "The separator GUI should render at least once.");
+                Assert.IsTrue(preview.ClipRestored, "Clipping the selection edges must not offset later rows or controls.");
+            }
+            finally
+            {
+                preview.Close();
+            }
         }
     }
 }

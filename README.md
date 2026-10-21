@@ -76,11 +76,13 @@ EditMode regression tests cover older save files, appearance serialization and e
 Use the **+ Add** dropdown above the bookmark list:
 
 - **Menu command...** adds a bookmark using an exact Unity menu path, for example `Assets/Show in Explorer` on Windows. The final part of the path becomes its default name. You can add a suffix and a color, and edit the path later with the pencil button. Saving never executes the command.
-- **Separator** inserts an empty row with a thicker horizontal line. Drag its handle to position it between any bookmarks, or remove it with **×**. A separator is a visual divider; it does not move other entries as a section.
+- **Separator** inserts an empty spacer row without a horizontal line. Drag its handle to position it between any bookmarks, edit it with the pencil, or remove it with **×**. A separator is a visual divider; it does not move other entries as a section.
 
 Click a command bookmark to execute it with Unity's current selection. A command may need a selected asset or a particular editor state. If its path is missing or unavailable, the plugin displays a message. Enter the menu hierarchy with `/` separators, preserving spelling and case; the path is not an asset file path. Commands provided by a package require that package to remain installed.
 
 Commands, separators, their order, and command colors/suffixes persist in the same group files and are included in import/export and independent group copies. Existing asset bookmarks continue to load normally. Separators are excluded from the favorite count.
+
+In **1.8.0**, separator selection is shown only at the left and right edges instead of filling the whole row. The pencil opens **Edit separator**, where **Caption (optional)** adds a section heading and **Color code** adds a subtle tint and a colored side accent. Leave the caption empty and color disabled for a plain blank spacer. **Reset**, then **Save**, restores that blank appearance. Separator captions and colors are also saved, exported, and copied with groups.
 
 ### Unlock favorites
 

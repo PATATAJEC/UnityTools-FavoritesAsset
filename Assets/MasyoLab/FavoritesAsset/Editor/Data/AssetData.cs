@@ -52,9 +52,9 @@ namespace MasyoLab.Editor.FavoritesAsset
         public bool UseCustomColor = false;
         public Color BookmarkColor = Color.white;
 
-        public string DisplayName => string.IsNullOrWhiteSpace(LabelSuffix)
-            ? Name
-            : $"{Name} — {LabelSuffix.Trim()}";
+        public string DisplayName => Kind == BookmarkKind.Separator
+            ? (LabelSuffix ?? string.Empty).Trim()
+            : string.IsNullOrWhiteSpace(LabelSuffix) ? Name : $"{Name} — {LabelSuffix.Trim()}";
 
         public int Index { get; set; }
 
