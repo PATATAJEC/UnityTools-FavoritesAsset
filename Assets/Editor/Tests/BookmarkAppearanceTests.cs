@@ -12,6 +12,16 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
     {
         private string m_folder;
         private readonly List<string> m_saveFiles = new List<string>();
+        private const string TestCommandPath = "Tools/Favorites Asset Tests/Count invocation";
+        private static int s_invocations;
+        private static Object s_commandSelection;
+
+        [MenuItem(TestCommandPath)]
+        private static void CountInvocation()
+        {
+            s_invocations++;
+            s_commandSelection = Selection.activeObject;
+        }
 
         private class TestPipeline : IPipeline
         {
@@ -24,6 +34,8 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
             public TestPipeline()
             {
                 Group = new GroupManager(this);
+                var field = typeof(GroupManager).GetField("m_groupDB", BindingFlags.NonPublic | BindingFlags.Instance);
+                ((PtrLinker<GroupDB>)field.GetValue(Group)).SetInst(new GroupDB());
                 Favorites = new FavoritesManager(this);
             }
         }
@@ -232,6 +244,164 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
         public void EditIcon_IsAvailableInUnity()
         {
             Assert.IsNotNull(EditorGUIUtility.IconContent(CONST.ICON_EDIT).image);
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        [TestCase("   ")]
+        [TestCase("Assets")]
+        [TestCase("Assets/")]
+        [TestCase("/Assets/Show in Explorer")]
+        [TestCase("Assets//Show in Explorer")]
+        [TestCase("Assets\\Show in Explorer")]
+        [TestCase("Assets/Show\nin Explorer")]
+        public void InvalidMenuPaths_AreRejected(string path)
+        {
+            Assert.IsFalse(AssetData.IsValidMenuPath(path));
+            Assert.Throws<System.ArgumentException>(() => AssetData.CreateMenuCommand(path));
+        }
+
+        [Test]
+        public void CreateAndSaveCommand_DoesNotExecuteIt()
+        {
+            s_invocations = 0;
+            var pipeline = new TestPipeline();
+            var db = new AssetDB();
+            var key = AddGroup(pipeline.Favorites, db);
+            pipeline.Group.GroupDB.Data.Add(new GroupData { GUID = key, GroupName = "Commands" });
+            var command = AssetData.CreateMenuCommand("  " + TestCommandPath + "  ");
+            Assert.IsTrue(pipeline.Favorites.AddEntry(command, key));
+            Assert.AreEqual(0, s_invocations);
+            Assert.AreEqual(TestCommandPath, command.MenuPath);
+            Assert.AreEqual("Count invocation", command.DisplayName);
+            Assert.IsNull(command.GetObject());
+            Assert.IsTrue(pipeline.Favorites.SetAppearance(command, "Test", true, Color.cyan, "Assets/Show in Explorer"));
+            Assert.AreEqual("Show in Explorer — Test", command.DisplayName);
+            var saved = FavoritesJson.FromJson(SaveLoad.Load(SaveLoad.GetSaveDataPath(key))).AssetDB.Ref[0];
+            saved.UpdateData();
+            Assert.AreEqual(BookmarkKind.MenuCommand, saved.Kind);
+            Assert.AreEqual(command.DisplayName, saved.DisplayName);
+            Assert.AreEqual("Assets/Show in Explorer", saved.MenuPath);
+            Assert.AreEqual(Color.cyan, saved.BookmarkColor);
+            Assert.AreEqual(0, s_invocations);
+        }
+
+        [Test]
+        public void Command_ExecutesOnceUsingCurrentSelection()
+        {
+            s_invocations = 0;
+            var selection = Selection.activeObject;
+            try
+            {
+                var asset = CreateBookmark();
+                Selection.activeObject = asset.GetObject();
+                var command = AssetData.CreateMenuCommand(TestCommandPath);
+                Assert.IsTrue(command.TryExecuteMenuCommand(out string error), error);
+                Assert.AreEqual(1, s_invocations);
+                Assert.AreEqual(asset.GetObject(), s_commandSelection);
+                Assert.AreEqual(asset.GetObject(), Selection.activeObject);
+            }
+            finally
+            {
+                Selection.activeObject = selection;
+            }
+        }
+
+        [Test]
+        public void MissingCommand_ReportsAnErrorWithoutExecuting()
+        {
+            s_invocations = 0;
+            var command = AssetData.CreateMenuCommand("Tools/__MissingBookmarkCommand_" + System.Guid.NewGuid().ToString("N"));
+            Assert.IsFalse(command.TryExecuteMenuCommand(out string error));
+            StringAssert.Contains(command.MenuPath, error);
+            Assert.AreEqual(0, s_invocations);
+            Assert.IsFalse(AssetData.CreateSeparator().TryExecuteMenuCommand(out _));
+        }
+
+        [Test]
+        public void ExplorerCommand_IsAvailableForSelectedFolderOnWindows()
+        {
+            if (Application.platform != RuntimePlatform.WindowsEditor)
+            {
+                Assert.Ignore("Windows-specific menu path.");
+            }
+            var selection = Selection.activeObject;
+            try
+            {
+                Selection.activeObject = CreateBookmark().GetObject();
+                // Check availability only; never open Explorer during automated tests.
+                Assert.IsTrue(Menu.GetEnabled("Assets/Show in Explorer"));
+            }
+            finally
+            {
+                Selection.activeObject = selection;
+            }
+        }
+
+        [Test]
+        public void MixedEntries_ReorderSaveExportAndCopyPreserveKindsAndOrder()
+        {
+            var pipeline = new TestPipeline();
+            var source = new AssetDB();
+            var sourceKey = AddGroup(pipeline.Favorites, source);
+            pipeline.Group.GroupDB.Data.Add(new GroupData { GUID = sourceKey, GroupName = "Mixed entries" });
+            pipeline.Group.GroupDB.SelectGroupGUID = sourceKey;
+            var asset = CreateBookmark();
+            source.Ref.Add(asset);
+            var command = AssetData.CreateMenuCommand(TestCommandPath);
+            command.LabelSuffix = "My command";
+            command.UseCustomColor = true;
+            command.BookmarkColor = Color.yellow;
+            Assert.IsTrue(pipeline.Favorites.AddEntry(command, sourceKey));
+            var firstSeparator = AssetData.CreateSeparator();
+            var secondSeparator = AssetData.CreateSeparator();
+            Assert.IsTrue(pipeline.Favorites.AddEntry(firstSeparator, sourceKey));
+            Assert.IsTrue(pipeline.Favorites.AddEntry(secondSeparator, sourceKey));
+            pipeline.Favorites.SortData(new[] { firstSeparator, command, secondSeparator, asset });
+
+            var loaded = FavoritesJson.FromJson(SaveLoad.Load(SaveLoad.GetSaveDataPath(sourceKey))).AssetDB;
+            loaded.Ref.ForEach(entry => entry.UpdateData());
+            CollectionAssert.AreEqual(new[] { BookmarkKind.Separator, BookmarkKind.MenuCommand, BookmarkKind.Separator, BookmarkKind.Asset },
+                loaded.Ref.ConvertAll(entry => entry.Kind));
+            Assert.AreEqual(string.Empty, loaded.Ref[0].Name);
+            Assert.IsNull(loaded.Ref[0].GetObject());
+            Assert.AreEqual(command.DisplayName, loaded.Ref[1].DisplayName);
+            Assert.AreEqual(asset.Guid, loaded.Ref[3].Guid);
+
+            var exported = FavoritesJsonExportData.ToJson(new AssetDB(), pipeline.Group.GroupDB, new List<AssetDB> { loaded });
+            var imported = FavoritesJsonExportData.FromJson(exported).GroupData[0];
+            CollectionAssert.AreEqual(loaded.Ref.ConvertAll(entry => entry.Kind), imported.Ref.ConvertAll(entry => entry.Kind));
+            Assert.AreEqual(TestCommandPath, imported.Ref[1].MenuPath);
+
+            var target = new AssetDB();
+            var targetKey = AddGroup(pipeline.Favorites, target);
+            pipeline.Favorites.ReplicationFavoriteData(sourceKey, targetKey);
+            CollectionAssert.AreEqual(source.Ref.ConvertAll(entry => entry.Kind), target.Ref.ConvertAll(entry => entry.Kind));
+            Assert.AreNotSame(firstSeparator, target.Ref[0]);
+            Assert.AreEqual(command.DisplayName, target.Ref[1].DisplayName);
+            Assert.IsTrue(pipeline.Favorites.SetAppearance(target.Ref[1], "Copy", true, Color.red, "Assets/Refresh"));
+            Assert.AreEqual(TestCommandPath, command.MenuPath);
+            Assert.AreEqual("My command", command.LabelSuffix);
+            Assert.AreEqual(Color.yellow, command.BookmarkColor);
+        }
+
+        [Test]
+        public void AddEntry_TargetsCapturedGroupAndRejectsRemovedGroup()
+        {
+            var pipeline = new TestPipeline();
+            var original = new AssetDB();
+            var originalKey = AddGroup(pipeline.Favorites, original);
+            pipeline.Group.GroupDB.Data.Add(new GroupData { GUID = originalKey, GroupName = "Original" });
+            var other = new AssetDB();
+            var otherKey = AddGroup(pipeline.Favorites, other);
+            pipeline.Group.GroupDB.Data.Add(new GroupData { GUID = otherKey, GroupName = "Other" });
+            pipeline.Group.GroupDB.SelectGroupGUID = otherKey;
+            Assert.IsTrue(pipeline.Favorites.AddEntry(AssetData.CreateMenuCommand(TestCommandPath), originalKey));
+            Assert.AreEqual(1, original.Ref.Count);
+            Assert.AreEqual(0, other.Ref.Count);
+            pipeline.Group.GroupDB.Data.RemoveAt(0);
+            Assert.IsFalse(pipeline.Favorites.AddEntry(AssetData.CreateSeparator(), originalKey));
+            Assert.AreEqual(1, original.Ref.Count);
         }
     }
 }

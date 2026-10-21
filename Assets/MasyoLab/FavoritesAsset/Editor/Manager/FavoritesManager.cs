@@ -22,6 +22,7 @@ namespace MasyoLab.Editor.FavoritesAsset
         private PtrLinker<AssetDB> m_assetDB => GetSelectFavoritesData();
         public IReadOnlyList<AssetData> Data => m_assetDB.Inst.Ref;
         public AssetDB AssetInfoList => GetSelectFavoritesData(CONST.FAVORITES_DATA).Inst;
+        public string SelectedGroupFileName => m_pipeline.Group.SelectGroupFileName;
 
         public FavoritesManager(IPipeline pipeline) : base(pipeline)
         {
@@ -38,6 +39,25 @@ namespace MasyoLab.Editor.FavoritesAsset
             m_assetDB.Inst.Ref.Add(new AssetData(guid, localId));
         }
 
+        public bool AddEntry(AssetData entry, string groupFileName)
+        {
+            // A utility editor may remain open after switching or removing its target group.
+            if (groupFileName != CONST.FAVORITES_DATA &&
+                !m_pipeline.Group.GroupDB.Data.Exists(group => group.GUID == groupFileName && !group.IsNull))
+            {
+                return false;
+            }
+            if (entry == null || (entry.Kind == BookmarkKind.MenuCommand && !AssetData.IsValidMenuPath(entry.MenuPath)))
+            {
+                return false;
+            }
+            var db = GetSelectFavoritesData(groupFileName).Inst;
+            entry.UpdateData();
+            db.Ref.Add(entry);
+            SaveLoad.Save(FavoritesJson.ToJson(db), SaveLoad.GetSaveDataPath(groupFileName));
+            return true;
+        }
+
         public void Remove(AssetData info)
         {
             m_assetDB.Inst.Ref.Remove(info);
@@ -50,7 +70,7 @@ namespace MasyoLab.Editor.FavoritesAsset
 
         public bool ExistsGUID(string guid, long localId)
         {
-            return m_assetDB.Inst.Ref.Exists(x => x.Guid == guid && x.LocalId == localId);
+            return m_assetDB.Inst.Ref.Exists(x => x.Kind == BookmarkKind.Asset && x.Guid == guid && x.LocalId == localId);
         }
 
         public void SaveFavoritesData()
@@ -58,8 +78,12 @@ namespace MasyoLab.Editor.FavoritesAsset
             SaveLoad.Save(FavoritesJson.ToJson(m_assetDB.Inst), SaveLoad.GetSaveDataPath(m_pipeline.Group.SelectGroupFileName));
         }
 
-        public bool SetAppearance(AssetData asset, string labelSuffix, bool useCustomColor, Color color)
+        public bool SetAppearance(AssetData asset, string labelSuffix, bool useCustomColor, Color color, string menuPath = null)
         {
+            if (asset.Kind == BookmarkKind.MenuCommand && !AssetData.IsValidMenuPath(menuPath ?? asset.MenuPath))
+            {
+                return false;
+            }
             // The user can switch groups while the appearance editor is open.
             // Save the group that owns this entry, rather than the currently selected group.
             foreach (var entry in m_assetDBDict)
@@ -72,6 +96,11 @@ namespace MasyoLab.Editor.FavoritesAsset
                 asset.LabelSuffix = labelSuffix == null ? string.Empty : labelSuffix.Trim();
                 asset.UseCustomColor = useCustomColor;
                 asset.BookmarkColor = new Color(color.r, color.g, color.b, 1f);
+                if (asset.Kind == BookmarkKind.MenuCommand)
+                {
+                    asset.MenuPath = (menuPath ?? asset.MenuPath).Trim();
+                }
+                asset.UpdateData();
                 SaveLoad.Save(FavoritesJson.ToJson(entry.Value.Inst), SaveLoad.GetSaveDataPath(entry.Key));
                 return true;
             }

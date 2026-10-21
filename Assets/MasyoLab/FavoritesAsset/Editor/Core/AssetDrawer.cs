@@ -32,19 +32,27 @@ namespace MasyoLab.Editor.FavoritesAsset
             GUIContent content = null;
             Texture assetIcon = null;
 
-            assetIcon = FavoritesAssetWindow.GetFavoritesAssetIcon?.Invoke(info.Path);
-            if (assetIcon == null)
+            if (info.Kind == BookmarkKind.MenuCommand)
             {
-                assetIcon = AssetDatabase.GetCachedIcon(info.Path);
-            }
-            if (assetIcon == null)
-            {
-                assetIcon = EditorGUIUtility.IconContent(CONST.ICON_ERRORICON).image;
-                content = new GUIContent("(missing asset) " + info.DisplayName, assetIcon, info.Path);
+                assetIcon = EditorGUIUtility.IconContent("PlayButton").image;
+                content = new GUIContent(info.DisplayName, assetIcon, info.MenuPath + "\nRun menu command using the current Unity selection");
             }
             else
             {
-                content = new GUIContent(info.DisplayName, assetIcon, info.Path);
+                assetIcon = FavoritesAssetWindow.GetFavoritesAssetIcon?.Invoke(info.Path);
+                if (assetIcon == null)
+                {
+                    assetIcon = AssetDatabase.GetCachedIcon(info.Path);
+                }
+                if (assetIcon == null)
+                {
+                    assetIcon = EditorGUIUtility.IconContent(CONST.ICON_ERRORICON).image;
+                    content = new GUIContent("(missing asset) " + info.DisplayName, assetIcon, info.Path);
+                }
+                else
+                {
+                    content = new GUIContent(info.DisplayName, assetIcon, info.Path);
+                }
             }
 
             var style = BUTTON_STYLE.Inst;
@@ -96,7 +104,7 @@ namespace MasyoLab.Editor.FavoritesAsset
         public static bool OnEditButton(Rect rect)
         {
             var icon = EditorGUIUtility.IconContent(CONST.ICON_EDIT);
-            var content = new GUIContent(icon.image, "Edit bookmark suffix and color");
+            var content = new GUIContent(icon.image, "Edit bookmark settings");
             return GUI.Button(rect, content);
         }
 

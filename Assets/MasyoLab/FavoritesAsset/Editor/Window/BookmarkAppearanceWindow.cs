@@ -13,6 +13,9 @@ namespace MasyoLab.Editor.FavoritesAsset
         private bool m_useColor;
         private Color m_color;
         private bool m_focusSuffix;
+        private bool m_creating;
+        private string m_groupFileName;
+        private string m_menuPath;
 
         private static readonly Color[] Palette =
         {
@@ -26,20 +29,31 @@ namespace MasyoLab.Editor.FavoritesAsset
             new Color32(220, 140, 182, 255),
         };
 
-        public static void Show(AssetData asset, FavoritesManager favorites, EditorWindow owner)
+        public static BookmarkAppearanceWindow Show(AssetData asset, FavoritesManager favorites, EditorWindow owner)
         {
             var window = CreateInstance<BookmarkAppearanceWindow>();
-            window.titleContent = new GUIContent("Edit bookmark");
+            window.titleContent = new GUIContent(asset.Kind == BookmarkKind.MenuCommand ? "Edit menu command" : "Edit bookmark");
             window.m_asset = asset;
             window.m_favorites = favorites;
             window.m_owner = owner;
             window.m_suffix = asset.LabelSuffix ?? string.Empty;
+            window.m_menuPath = asset.MenuPath ?? string.Empty;
             window.m_useColor = asset.UseCustomColor;
             window.m_color = asset.UseCustomColor ? asset.BookmarkColor : Palette[4];
             window.m_focusSuffix = true;
-            window.minSize = window.maxSize = new Vector2(400f, 290f);
+            window.minSize = window.maxSize = new Vector2(400f, asset.Kind == BookmarkKind.MenuCommand ? 350f : 290f);
             // A utility window stays open when Unity's color picker takes focus.
             window.ShowUtility();
+            return window;
+        }
+
+        public static void ShowNewMenuCommand(FavoritesManager favorites, EditorWindow owner, string groupFileName)
+        {
+            var draft = new AssetData(string.Empty, 0) { Kind = BookmarkKind.MenuCommand };
+            var window = Show(draft, favorites, owner);
+            window.titleContent = new GUIContent("Add menu command");
+            window.m_creating = true;
+            window.m_groupFileName = groupFileName;
         }
 
         private void OnGUI()
@@ -61,20 +75,31 @@ namespace MasyoLab.Editor.FavoritesAsset
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorDefaultMargins))
             {
-                EditorGUILayout.LabelField("Original asset", m_asset.Name);
-                EditorGUILayout.LabelField(new GUIContent(m_asset.Path, m_asset.Path), EditorStyles.miniLabel);
+                var isCommand = m_asset.Kind == BookmarkKind.MenuCommand;
+                if (isCommand)
+                {
+                    GUI.SetNextControlName("MenuCommandPath");
+                    m_menuPath = EditorGUILayout.TextField("Menu path", m_menuPath);
+                    EditorGUILayout.HelpBox("Enter the exact path from Unity's menu, e.g. Assets/Show in Explorer. Saving does not run the command.", MessageType.Info);
+                }
+                else
+                {
+                    EditorGUILayout.LabelField("Original asset", m_asset.Name);
+                    EditorGUILayout.LabelField(new GUIContent(m_asset.Path, m_asset.Path), EditorStyles.miniLabel);
+                }
                 EditorGUILayout.Space();
 
                 GUI.SetNextControlName("BookmarkSuffix");
                 m_suffix = EditorGUILayout.TextField("Name suffix", m_suffix);
                 if (m_focusSuffix && ev.type == EventType.Repaint)
                 {
-                    EditorGUI.FocusTextInControl("BookmarkSuffix");
+                    EditorGUI.FocusTextInControl(m_creating ? "MenuCommandPath" : "BookmarkSuffix");
                     m_focusSuffix = false;
                 }
 
+                var originalName = isCommand ? AssetData.GetMenuCommandName(m_menuPath) : m_asset.Name;
                 var preview = string.IsNullOrWhiteSpace(m_suffix)
-                    ? m_asset.Name : $"{m_asset.Name} — {m_suffix.Trim()}";
+                    ? originalName : $"{originalName} — {m_suffix.Trim()}";
                 EditorGUILayout.LabelField("Preview", preview);
                 EditorGUILayout.Space();
 
@@ -99,7 +124,9 @@ namespace MasyoLab.Editor.FavoritesAsset
                     }
                 }
 
-                EditorGUILayout.HelpBox("Changes affect this bookmark only. The asset name and path stay unchanged.", MessageType.Info);
+                EditorGUILayout.HelpBox(isCommand
+                    ? "Click the saved bookmark to run the command. Commands use the current selection in Unity."
+                    : "Changes affect this bookmark only. The asset name and path stay unchanged.", MessageType.Info);
                 GUILayout.FlexibleSpace();
 
                 using (new EditorGUILayout.HorizontalScope())
@@ -116,17 +143,33 @@ namespace MasyoLab.Editor.FavoritesAsset
                     {
                         Close();
                     }
-                    if (GUILayout.Button("Save"))
+                    using (new EditorGUI.DisabledScope(isCommand && !AssetData.IsValidMenuPath(m_menuPath)))
                     {
-                        if (!m_favorites.SetAppearance(m_asset, m_suffix, m_useColor, m_color))
+                        if (GUILayout.Button("Save"))
                         {
-                            EditorUtility.DisplayDialog("Bookmark removed", "This bookmark or its group was removed. No changes were saved.", "OK");
+                            bool saved;
+                            if (m_creating)
+                            {
+                                var entry = AssetData.CreateMenuCommand(m_menuPath);
+                                entry.LabelSuffix = (m_suffix ?? string.Empty).Trim();
+                                entry.UseCustomColor = m_useColor;
+                                entry.BookmarkColor = new Color(m_color.r, m_color.g, m_color.b, 1f);
+                                saved = m_favorites.AddEntry(entry, m_groupFileName);
+                            }
+                            else
+                            {
+                                saved = m_favorites.SetAppearance(m_asset, m_suffix, m_useColor, m_color, m_menuPath);
+                            }
+                            if (!saved)
+                            {
+                                EditorUtility.DisplayDialog("Bookmark unavailable", "This bookmark or its group was removed. No changes were saved.", "OK");
+                            }
+                            if (m_owner != null)
+                            {
+                                m_owner.Repaint();
+                            }
+                            Close();
                         }
-                        if (m_owner != null)
-                        {
-                            m_owner.Repaint();
-                        }
-                        Close();
                     }
                 }
                 EditorGUILayout.Space();

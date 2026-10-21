@@ -42,6 +42,7 @@ namespace MasyoLab.Editor.FavoritesAsset
 
         public override void OnGUI()
         {
+            DrawAddToolbar();
             // ドラッグアンドドロップ
             DragAndDropGUI();
 
@@ -49,13 +50,37 @@ namespace MasyoLab.Editor.FavoritesAsset
             DrawAssetGUI();
 
             GUI.Box(GUILayoutUtility.GetRect(0, CONST.GUI_LAYOUT_HEIGHT, GUILayout.ExpandWidth(true)),
-                $"{m_pipeline.Favorites.Data.Count} {LanguageData.GetText(m_pipeline.Setting.Language, TextEnum.NumFav)}",
+                $"{m_pipeline.Favorites.Data.Count(entry => entry.Kind != BookmarkKind.Separator)} {LanguageData.GetText(m_pipeline.Setting.Language, TextEnum.NumFav)}",
                 m_boxStyle.Inst);
         }
 
         public override void Reload()
         {
             InitFavoritesWindow();
+        }
+
+        private void DrawAddToolbar()
+        {
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+            {
+                var buttonRect = GUILayoutUtility.GetRect(new GUIContent("+ Add"), EditorStyles.toolbarDropDown, GUILayout.Width(80f));
+                if (GUI.Button(buttonRect, "+ Add", EditorStyles.toolbarDropDown))
+                {
+                    var menu = new GenericMenu();
+                    var groupFileName = m_pipeline.Favorites.SelectedGroupFileName;
+                    menu.AddItem(new GUIContent("Menu command..."), false, () =>
+                    {
+                        BookmarkAppearanceWindow.ShowNewMenuCommand(m_pipeline.Favorites, m_pipeline.Root, groupFileName);
+                    });
+                    menu.AddItem(new GUIContent("Separator"), false, () =>
+                    {
+                        m_pipeline.Favorites.AddEntry(AssetData.CreateSeparator(), groupFileName);
+                        m_pipeline.Root.Repaint();
+                    });
+                    menu.DropDown(buttonRect);
+                }
+                GUILayout.FlexibleSpace();
+            }
         }
 
         private void InitFavoritesWindow()
@@ -173,15 +198,27 @@ namespace MasyoLab.Editor.FavoritesAsset
         {
             float BUTTON_WIDTH = 30;
             var assetData = m_pipeline.Favorites.Data[index];
+            if (assetData.Kind == BookmarkKind.Separator)
+            {
+                var line = new Rect(rect.x + 4f, rect.center.y - 1.5f,
+                    Mathf.Max(0f, rect.width - BUTTON_WIDTH - 8f), 3f);
+                var lineColor = EditorGUIUtility.isProSkin ? new Color(0.55f, 0.55f, 0.55f) : new Color(0.35f, 0.35f, 0.35f);
+                EditorGUI.DrawRect(line, lineColor);
+                var remove = new Rect(rect.xMax - BUTTON_WIDTH, rect.y, BUTTON_WIDTH, rect.height);
+                return AssetDrawer.OnUnfavoriteButton(remove, assetData);
+            }
             var copyRect = rect;
 
             copyRect.width = BUTTON_WIDTH;
 
             // Ping を実行
-            AssetDrawer.OnPingObjectButton(copyRect, assetData);
-
-            rect.x += BUTTON_WIDTH;
-            rect.width = Mathf.Max(0f, rect.width - BUTTON_WIDTH * 3);
+            if (assetData.Kind == BookmarkKind.Asset)
+            {
+                AssetDrawer.OnPingObjectButton(copyRect, assetData);
+                rect.x += BUTTON_WIDTH;
+                rect.width -= BUTTON_WIDTH;
+            }
+            rect.width = Mathf.Max(0f, rect.width - BUTTON_WIDTH * 2);
 
             // アセットを開くボタン
             AssetDrawer.OnAssetButton(m_pipeline, rect, assetData, OpenAsset);
@@ -236,6 +273,22 @@ namespace MasyoLab.Editor.FavoritesAsset
         /// <param name="info"></param>
         private void OpenAsset(AssetData info)
         {
+            if (info.Kind == BookmarkKind.MenuCommand)
+            {
+                // Commands can open/close windows or reload scripts; run after this GUI event.
+                EditorApplication.delayCall += () =>
+                {
+                    if (!info.TryExecuteMenuCommand(out string error))
+                    {
+                        EditorUtility.DisplayDialog("Menu command unavailable", error, "OK");
+                    }
+                };
+                return;
+            }
+            if (info.Kind != BookmarkKind.Asset)
+            {
+                return;
+            }
             // シーンアセットを開こうとしている
             if (Path.GetExtension(info.Path).Equals(CONST.UNITY_EXT))
             {

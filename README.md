@@ -71,6 +71,17 @@ https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/
 
 EditMode regression tests cover older save files, appearance serialization and export/import, renamed/moved folders and prefabs, independent group copies, and Unity's edit icon. The test project's manifest includes Unity Test Framework so the tests can also run locally.
 
+### Menu commands and separators (PATATAJEC fork, 1.7.0)
+
+Use the **+ Add** dropdown above the bookmark list:
+
+- **Menu command...** adds a bookmark using an exact Unity menu path, for example `Assets/Show in Explorer` on Windows. The final part of the path becomes its default name. You can add a suffix and a color, and edit the path later with the pencil button. Saving never executes the command.
+- **Separator** inserts an empty row with a thicker horizontal line. Drag its handle to position it between any bookmarks, or remove it with **×**. A separator is a visual divider; it does not move other entries as a section.
+
+Click a command bookmark to execute it with Unity's current selection. A command may need a selected asset or a particular editor state. If its path is missing or unavailable, the plugin displays a message. Enter the menu hierarchy with `/` separators, preserving spelling and case; the path is not an asset file path. Commands provided by a package require that package to remain installed.
+
+Commands, separators, their order, and command colors/suffixes persist in the same group files and are included in import/export and independent group copies. Existing asset bookmarks continue to load normally. Separators are excluded from the favorite count.
+
 ### Unlock favorites
 
 ![fav assets action 3](https://user-images.githubusercontent.com/20793765/129485099-4ff09124-6fce-4e92-b19b-4126705b7295.gif)
