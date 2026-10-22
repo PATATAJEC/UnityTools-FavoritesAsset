@@ -1,4 +1,59 @@
-﻿# Favorites Asset Window
+﻿# Favorites Asset Window — PATATAJEC fork
+
+A customized fork of [Favorites Asset Window by MasyoLab](https://github.com/MasyoLab/UnityTools-FavoritesAsset), with bookmark notes, colors, menu command shortcuts, and editable section spacers.
+
+**Current fork version: 1.8.0.** The changes in this fork were checked in **Unity 2022.3.62f2**, with **36 passing EditMode tests**, including a separator GUI rendering test. The broader compatibility matrix in the original documentation below belongs to the upstream plugin.
+
+## Preview of version 1.8.0
+
+![PATATAJEC fork 1.8.0 showing colored asset bookmarks, a menu command, and named section spacers](docs/images/favorites-1.8.0.png)
+
+## Changes in this fork
+
+- **Bookmark notes:** add a custom suffix after the original asset or folder name, for example `Candle — MAT SkyboxMaking`. This does not rename the asset or folder.
+- **Colors:** choose a quick palette color or a custom color for each bookmark. A side accent and a subtle background tint make related entries easier to recognize.
+- **Pencil editor:** the pencil next to **×** edits the bookmark settings. **Save** applies changes, **Cancel** discards them, and **Reset → Save** restores the default appearance.
+- **Menu command bookmarks:** use **+ Add → Menu command...** to enter an exact Unity menu path. The entry runs the command when clicked and supports notes and colors. Saving a bookmark does not execute it.
+- **Section spacers:** use **+ Add → Separator** for a movable blank row. There is no horizontal rule, and selection highlights only the side edges. Its pencil editor lets you add an optional section caption and color.
+- **Independent group copies:** copied bookmarks retain their appearance and can be edited without changing the source group.
+- **Persistent settings:** notes, colors, commands, spacers, and their order are saved with groups and included in import/export. Existing asset bookmarks remain compatible. Hover over an asset bookmark to see its full project path.
+
+## Install exactly version 1.8.0
+
+1. Install Git and make sure Unity can find it. Restart Unity after installing Git if necessary.
+2. Open your Unity project and select **Window → Package Manager**.
+3. Click **+ → Add package from git URL...**.
+4. Paste the following URL and click **Add**:
+
+```text
+https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/FavoritesAsset#1c48dbcc11e28d484d7ee78750556986ce79447d
+```
+
+5. Open **Tools → Favorites Asset Window**.
+
+This URL pins the package to the exact commit containing version **1.8.0**. It keeps installing that revision even if this fork changes later. If you already installed the original MasyoLab package, replace it with this fork; both use the same package name.
+
+To install the current code from this fork's `master` branch instead, use:
+
+```text
+https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/FavoritesAsset
+```
+
+Your personal bookmarks are not included when someone installs the plugin. To share a bookmark collection, use **Menu → Export**, send the exported file, and load it with **Menu → Import** in the receiving project. Asset references require the corresponding assets and their GUIDs to exist there.
+
+## Menu command behavior
+
+Enter the menu hierarchy using `/` separators, preserving spelling and case. Commands use the current selection in Unity and may require a particular editor state or an installed third-party tool.
+
+**Known limitation in 1.8.0:** `Assets/Show in Explorer` has been reported not to work from a bookmark in the user's setup. Dedicated handling for that command has not been added. A menu path being available does not by itself confirm that every built-in or context-dependent command will work from this window.
+
+---
+
+## Original plugin documentation — MasyoLab
+
+> Everything below this notice is the original plugin's documentation, retained for reference and attribution. Its installation URLs, screenshots, badges, support statements, and release links refer to **MasyoLab's upstream plugin**. To install **this modified fork**, use the PATATAJEC installation instructions above.
+
+# Favorites Asset Window
 
 [![License](https://img.shields.io/badge/Licenses-MIT-brightgreen)](https://github.com/MasyoLab/UnityTools-FavoritesAsset/blob/master/LICENSE.md)
 [![Unity Editor Extension Test](https://github.com/MasyoLab/UnityTools-FavoritesAsset/actions/workflows/unity-test.yml/badge.svg)](https://github.com/MasyoLab/UnityTools-FavoritesAsset/actions/workflows/unity-test.yml)
@@ -50,39 +105,6 @@ You can bookmark assets by dragging and dropping them.
 Registered assets can have a focus button for the Project view and an open button for the asset.
 
 ![fav assets action 2](https://user-images.githubusercontent.com/20793765/128969150-67e8dfe0-786b-457c-bcd1-4b40dc0bcc1d.gif)
-
-### Bookmark suffixes and colors (PATATAJEC fork)
-
-Click the pencil icon next to **×** on any bookmark to edit its appearance:
-
-- **Name suffix** adds a note after the original asset name, e.g. `Materials — Character`.
-- **Color code** adds a colored strip and a subtle tint to the bookmark button. Pick a quick color or use Unity's color picker.
-- **Save** applies and saves the changes; **Cancel** discards them. **Reset**, followed by **Save**, restores the original label and default appearance.
-
-These settings belong to each bookmark, so the same asset can have different notes and colors in different groups. They do not rename or modify the asset or folder. Hover over the asset button to see its full project path.
-
-Suffixes and colors persist in the existing favorites files and are included in import/export and group copies. Existing favorites without appearance settings keep their original labels and styling. Copying a group creates independent bookmark entries.
-
-To install this fork from **Window > Package Manager > + > Add package from git URL...**, use:
-
-```text
-https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/FavoritesAsset
-```
-
-EditMode regression tests cover older save files, appearance serialization and export/import, renamed/moved folders and prefabs, independent group copies, and Unity's edit icon. The test project's manifest includes Unity Test Framework so the tests can also run locally.
-
-### Menu commands and separators (PATATAJEC fork, 1.7.0)
-
-Use the **+ Add** dropdown above the bookmark list:
-
-- **Menu command...** adds a bookmark using an exact Unity menu path, for example `Assets/Show in Explorer` on Windows. The final part of the path becomes its default name. You can add a suffix and a color, and edit the path later with the pencil button. Saving never executes the command.
-- **Separator** inserts an empty spacer row without a horizontal line. Drag its handle to position it between any bookmarks, edit it with the pencil, or remove it with **×**. A separator is a visual divider; it does not move other entries as a section.
-
-Click a command bookmark to execute it with Unity's current selection. A command may need a selected asset or a particular editor state. If its path is missing or unavailable, the plugin displays a message. Enter the menu hierarchy with `/` separators, preserving spelling and case; the path is not an asset file path. Commands provided by a package require that package to remain installed.
-
-Commands, separators, their order, and command colors/suffixes persist in the same group files and are included in import/export and independent group copies. Existing asset bookmarks continue to load normally. Separators are excluded from the favorite count.
-
-In **1.8.0**, separator selection is shown only at the left and right edges instead of filling the whole row. The pencil opens **Edit separator**, where **Caption (optional)** adds a section heading and **Color code** adds a subtle tint and a colored side accent. Leave the caption empty and color disabled for a plain blank spacer. **Reset**, then **Save**, restores that blank appearance. Separator captions and colors are also saved, exported, and copied with groups.
 
 ### Unlock favorites
 
