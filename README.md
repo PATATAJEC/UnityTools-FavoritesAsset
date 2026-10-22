@@ -18,7 +18,7 @@ A customized fork of [Favorites Asset Window by MasyoLab](https://github.com/Mas
 - **Independent group copies:** copied bookmarks retain their appearance and can be edited without changing the source group.
 - **Persistent settings:** notes, colors, commands, spacers, and their order are saved with groups and included in import/export. Existing asset bookmarks remain compatible. Hover over an asset bookmark to see its full project path.
 
-## Install exactly version 1.8.0
+## Installation
 
 1. Install Git and make sure Unity can find it. Restart Unity after installing Git if necessary.
 2. Open your Unity project and select **Window → Package Manager**.
@@ -26,18 +26,12 @@ A customized fork of [Favorites Asset Window by MasyoLab](https://github.com/Mas
 4. Paste the following URL and click **Add**:
 
 ```text
-https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/FavoritesAsset#1c48dbcc11e28d484d7ee78750556986ce79447d
+https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/FavoritesAsset
 ```
 
 5. Open **Tools → Favorites Asset Window**.
 
-This URL pins the package to the exact commit containing version **1.8.0**. It keeps installing that revision even if this fork changes later. If you already installed the original MasyoLab package, replace it with this fork; both use the same package name.
-
-To install the current code from this fork's `master` branch instead, use:
-
-```text
-https://github.com/PATATAJEC/UnityTools-FavoritesAsset.git?path=Assets/MasyoLab/FavoritesAsset
-```
+This installs the current plugin from this fork's `master` branch. If you already installed the original MasyoLab package, replace it with this fork; both use the same package name.
 
 Your personal bookmarks are not included when someone installs the plugin. To share a bookmark collection, use **Menu → Export**, send the exported file, and load it with **Menu → Import** in the receiving project. Asset references require the corresponding assets and their GUIDs to exist there.
 
