@@ -13,7 +13,7 @@ A customized fork of [Favorites Asset Window by MasyoLab](https://github.com/Mas
 - **Bookmark notes:** add a custom suffix after the original asset or folder name, for example `Candle — MAT SkyboxMaking`. This does not rename the asset or folder.
 - **Colors:** choose a quick palette color or a custom color for each bookmark. A side accent and a subtle background tint make related entries easier to recognize.
 - **Pencil editor:** the pencil next to **×** edits the bookmark settings. **Save** applies changes, **Cancel** discards them, and **Reset → Save** restores the default appearance.
-- **Menu command bookmarks:** use **+ Add → Menu command...** to enter an exact Unity menu path. The entry runs the command when clicked and supports notes and colors. Saving a bookmark does not execute it.
+- **Menu command bookmarks:** use **+ Add → Menu command...** to enter an exact Unity menu path. The entry runs the command when clicked and supports notes and colors. Saving a bookmark does not execute it. See the [Console shortcut example](#example-add-a-console-shortcut) below.
 - **Section spacers:** use **+ Add → Separator** for a movable blank row. There is no horizontal rule, and selection highlights only the side edges. Its pencil editor lets you add an optional section caption and color.
 - **Independent group copies:** copied bookmarks retain their appearance and can be edited without changing the source group.
 - **Persistent settings:** notes, colors, commands, spacers, and their order are saved with groups and included in import/export. Existing asset bookmarks remain compatible. Hover over an asset bookmark to see its full project path.
@@ -38,6 +38,25 @@ Your personal bookmarks are not included when someone installs the plugin. To sh
 ## Menu command behavior
 
 Enter the menu hierarchy using `/` separators, preserving spelling and case. Commands use the current selection in Unity and may require a particular editor state or an installed third-party tool.
+
+### Example: add a Console shortcut
+
+Unity's Console is available under **Window → General → Console** ([Unity documentation](https://docs.unity3d.com/2022.3/Documentation/Manual/Console.html)). To add it to your favorites:
+
+1. Open **Tools → Favorites Asset Window** and select the group where you want the shortcut.
+2. Click **+ Add → Menu command...**.
+3. In **Menu path**, enter `Window/General/Console`.
+4. Optionally enter `Debugging` in **Name suffix** and enable **Color code** to choose a color.
+5. Click **Save**. The bookmark appears as **Console** or **Console — Debugging** if you added that suffix. Saving only creates the bookmark.
+6. Click the bookmark to open or focus the Console. Use its pencil button to change the path, suffix, or color later.
+
+The same pattern applies to your own tools. For example, **if your project already has** a command under **Tools → My Tools → Bake Cubemap**, its bookmark path is:
+
+```text
+Tools/My Tools/Bake Cubemap
+```
+
+Use the menu labels separated by `/`, without keyboard shortcut labels. You do not need to find the script that implements the command or enter a `.cs` file path. The command must already exist in the current Unity project.
 
 **Known limitation in 1.8.0:** `Assets/Show in Explorer` has been reported not to work from a bookmark in the user's setup. Dedicated handling for that command has not been added. A menu path being available does not by itself confirm that every built-in or context-dependent command will work from this window.
 
