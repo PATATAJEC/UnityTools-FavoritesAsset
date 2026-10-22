@@ -2,7 +2,7 @@
 
 A customized fork of [Favorites Asset Window by MasyoLab](https://github.com/MasyoLab/UnityTools-FavoritesAsset), with bookmark notes, colors, menu command shortcuts, and editable section spacers.
 
-**Current fork version: 1.8.0.** The changes in this fork were checked in **Unity 2022.3.62f2**, with **36 passing EditMode tests**, including a separator GUI rendering test. The broader compatibility matrix in the original documentation below belongs to the upstream plugin.
+**Current fork version: 1.8.1.** The changes in this fork were checked in **Unity 2022.3.62f2**, with **39 passing EditMode tests**, including menu validation and a separator GUI rendering test. The broader compatibility matrix in the original documentation below belongs to the upstream plugin.
 
 ## Preview of version 1.8.0
 
@@ -14,6 +14,7 @@ A customized fork of [Favorites Asset Window by MasyoLab](https://github.com/Mas
 - **Colors:** choose a quick palette color or a custom color for each bookmark. A side accent and a subtle background tint make related entries easier to recognize.
 - **Pencil editor:** the pencil next to **×** edits the bookmark settings. **Save** applies changes, **Cancel** discards them, and **Reset → Save** restores the default appearance.
 - **Menu command bookmarks:** use **+ Add → Menu command...** to enter an exact Unity menu path. The entry runs the command when clicked and supports notes and colors. Saving a bookmark does not execute it. See the [Console shortcut example](#example-add-a-console-shortcut) below.
+- **Menu execution update (1.8.1):** command bookmarks now let Unity validate and execute the command in one operation, without a separate `Menu.GetEnabled` pre-check. This removes a possible early rejection before execution. Tests cover commands under both **Tools** and **Assets**, changing validation states, and execution exactly once with the current selection. The reported intermittent issue in the user's full project still needs confirmation after updating.
 - **Section spacers:** use **+ Add → Separator** for a movable blank row. There is no horizontal rule, and selection highlights only the side edges. Its pencil editor lets you add an optional section caption and color.
 - **Independent group copies:** copied bookmarks retain their appearance and can be edited without changing the source group.
 - **Persistent settings:** notes, colors, commands, spacers, and their order are saved with groups and included in import/export. Existing asset bookmarks remain compatible. Hover over an asset bookmark to see its full project path.

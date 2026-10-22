@@ -16,10 +16,32 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
         private string m_folder;
         private readonly List<string> m_saveFiles = new List<string>();
         private const string TestCommandPath = "Tools/Favorites Asset Tests/Count invocation";
+        private const string AssetCommandPath = "Assets/Favorites Asset Tests/Count invocation";
         private static int s_invocations;
         private static Object s_commandSelection;
+        private const string ValidatedCommandPath = "Tools/Favorites Asset Tests/Validated invocation";
+        private static bool s_commandEnabled;
+        private static int s_validatedInvocations;
+
+        [MenuItem(ValidatedCommandPath)]
+        private static void CountValidatedInvocation()
+        {
+            s_validatedInvocations++;
+        }
+
+        [MenuItem(ValidatedCommandPath, true)]
+        private static bool ValidateInvocation() => s_commandEnabled;
+
+        // Mimic the validation performed when Unity opens its main menu.
+        private static void RefreshValidatedCommandState()
+        {
+            var validate = typeof(EditorApplication).GetMethod("ValidateMenuItem", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.IsNotNull(validate);
+            validate.Invoke(null, new object[] { ValidatedCommandPath });
+        }
 
         [MenuItem(TestCommandPath)]
+        [MenuItem(AssetCommandPath)]
         private static void CountInvocation()
         {
             s_invocations++;
@@ -289,8 +311,9 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
             Assert.AreEqual(0, s_invocations);
         }
 
-        [Test]
-        public void Command_ExecutesOnceUsingCurrentSelection()
+        [TestCase(TestCommandPath)]
+        [TestCase(AssetCommandPath)]
+        public void Command_ExecutesOnceUsingCurrentSelection(string menuPath)
         {
             s_invocations = 0;
             var selection = Selection.activeObject;
@@ -298,7 +321,7 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
             {
                 var asset = CreateBookmark();
                 Selection.activeObject = asset.GetObject();
-                var command = AssetData.CreateMenuCommand(TestCommandPath);
+                var command = AssetData.CreateMenuCommand(menuPath);
                 Assert.IsTrue(command.TryExecuteMenuCommand(out string error), error);
                 Assert.AreEqual(1, s_invocations);
                 Assert.AreEqual(asset.GetObject(), s_commandSelection);
@@ -311,10 +334,41 @@ namespace MasyoLab.FavoritesAsset.Tests.Editor
         }
 
         [Test]
+        public void Command_CanRunAfterValidatorChangesFromDisabledToEnabled()
+        {
+            s_validatedInvocations = 0;
+            s_commandEnabled = false;
+            RefreshValidatedCommandState();
+            Assert.IsFalse(Menu.GetEnabled(ValidatedCommandPath));
+
+            // The current validator now allows execution without opening the main menu.
+            s_commandEnabled = true;
+            var command = AssetData.CreateMenuCommand(ValidatedCommandPath);
+            Assert.IsTrue(command.TryExecuteMenuCommand(out string error), error);
+            Assert.AreEqual(1, s_validatedInvocations);
+        }
+
+        [Test]
+        public void Command_DoesNotExecuteWhenCurrentValidatorRejectsIt()
+        {
+            s_validatedInvocations = 0;
+            s_commandEnabled = true;
+            RefreshValidatedCommandState();
+            Assert.IsTrue(Menu.GetEnabled(ValidatedCommandPath));
+
+            s_commandEnabled = false;
+            var command = AssetData.CreateMenuCommand(ValidatedCommandPath);
+            Assert.IsFalse(command.TryExecuteMenuCommand(out string error));
+            StringAssert.Contains(ValidatedCommandPath, error);
+            Assert.AreEqual(0, s_validatedInvocations);
+        }
+
+        [Test]
         public void MissingCommand_ReportsAnErrorWithoutExecuting()
         {
             s_invocations = 0;
             var command = AssetData.CreateMenuCommand("Tools/__MissingBookmarkCommand_" + System.Guid.NewGuid().ToString("N"));
+            LogAssert.Expect(LogType.Error, $"ExecuteMenuItem failed because there is no menu named '{command.MenuPath}'");
             Assert.IsFalse(command.TryExecuteMenuCommand(out string error));
             StringAssert.Contains(command.MenuPath, error);
             Assert.AreEqual(0, s_invocations);

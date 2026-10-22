@@ -123,14 +123,12 @@ namespace MasyoLab.Editor.FavoritesAsset
                 error = "This bookmark does not contain a valid menu command.";
                 return false;
             }
-            if (!Menu.GetEnabled(MenuPath))
-            {
-                error = $"Menu command not found or currently unavailable:\n{MenuPath}\nCheck the path and the current selection in Unity.";
-                return false;
-            }
+            // Let Unity validate and execute in one operation. Menu.GetEnabled is a
+            // query of the menu's enabled state, not a prerequisite for execution
+            // from another window; it can reject a command before Unity validates it.
             if (!EditorApplication.ExecuteMenuItem(MenuPath))
             {
-                error = $"Could not execute menu command:\n{MenuPath}";
+                error = $"Unity could not execute menu command:\n{MenuPath}\nCheck the exact menu path, current selection, and whether the command is available in Unity's main menu. If it is available there, check Console for errors from the command.";
                 return false;
             }
             error = string.Empty;
